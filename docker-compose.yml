@@ -17,9 +17,11 @@ services:
       retries: 5
 
   mlflow_server:
-    image: ghcr.io/mlflow/mlflow:v2.14.1
+    image: python:3.11-slim
     container_name: mlflow_server
-    command: mlflow server --host 0.0.0.0 --port 5001 --backend-store-uri sqlite:////mlflow/mlflow.db --default-artifact-root /mlflow/artifacts
+    command: >
+      sh -c "pip install --no-cache-dir mlflow &&
+             mlflow server --host 0.0.0.0 --port 5001 --backend-store-uri sqlite:////mlflow/mlflow.db --default-artifact-root /mlflow/artifacts"
     ports:
       - "5001:5001"
     volumes:
