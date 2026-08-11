@@ -1,0 +1,27 @@
+# Python & Virtual Environments
+venv/
+backend/venv/
+__pycache__/
+backend/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Inbox & Test Artifacts
+s3_inbox/
+backend/s3_inbox/
+*.pdf
+
+# Next.js & Node
+frontend/.next/
+frontend/node_modules/
+node_modules/
+
+# MLflow local databases & artifacts
+mlflow.db
+mlruns/
+
+# OS & Environment Secrets
+.DS_Store
+.env
+.env.local
