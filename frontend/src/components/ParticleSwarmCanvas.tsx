@@ -5,7 +5,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { Points, PointMaterial } from "@react-three/drei";
 
 function ParticleSwarm({ isProcessing }: { isProcessing: boolean }) {
-  const ref = useRef<any>();
+  const ref = useRef<any>(null);
 
   // Generate 5,000 3D particle positions in a sphere using native JS Math
   const spherePositions = useMemo(() => {
