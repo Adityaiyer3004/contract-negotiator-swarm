@@ -3,6 +3,7 @@ version: '3.8'
 services:
   postgres_db:
     image: postgres:15-alpine
+    container_name: postgres_db
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password
@@ -11,14 +12,65 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d langgraph_state"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   mlflow_server:
-    image: ghcr.io/mlflow/mlflow:v2.10.2
-    command: mlflow server --host 0.0.0.0
+    image: ghcr.io/mlflow/mlflow:v2.14.1
+    container_name: mlflow_server
+    command: mlflow server --host 0.0.0.0 --port 5001 --backend-store-uri sqlite:////mlflow/mlflow.db --default-artifact-root /mlflow/artifacts
     ports:
-      - "5000:5000"
+      - "5001:5001"
     volumes:
       - mlflow_data:/mlflow
+
+  backend_gateway:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: backend_gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://admin:password@postgres_db:5432/langgraph_state
+      - MLFLOW_TRACKING_URI=http://mlflow_server:5001
+      - FASTAPI_HOST=0.0.0.0
+      - FASTAPI_PORT=8000
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+      mlflow_server:
+        condition: service_started
+    volumes:
+      - ./s3_inbox:/app/s3_inbox
+
+  ingestion_worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: ingestion_worker
+    command: python backend/worker.py
+    environment:
+      - API_URL=http://backend_gateway:8000/api/threads/start
+    depends_on:
+      - backend_gateway
+    volumes:
+      - ./s3_inbox:/app/s3_inbox
+
+  frontend_ui:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: frontend_ui
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+    depends_on:
+      - backend_gateway
 
 volumes:
   postgres_data:
